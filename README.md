@@ -2,17 +2,6 @@
 
 ## ***Passo 1:***
 
-Entre no link abaixo: 
-
-https://github.com/nicklaranjeira/Quizz-fisica
-
-<aside>
-💡
-
-https://github.com/nicklaranjeira/Quizz-fisica
-
-</aside>
-
 ***Clique no botão verde “Code”:*** 
 
 <img width="1333" height="670" alt="image (1)" src="https://github.com/user-attachments/assets/1e9f7d84-23d7-4c69-a189-dc3b3e548485" />
