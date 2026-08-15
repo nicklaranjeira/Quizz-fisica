@@ -11,6 +11,7 @@
 ## ***Passo 2:***
 
 Após baixar o arquivo zip clique com o botão direito na pasta zipada.
+
 <img width="380" height="540" alt="image (2)" src="https://github.com/user-attachments/assets/61aae7b3-3841-4b39-979a-b043368b9bc4" />
 
 
