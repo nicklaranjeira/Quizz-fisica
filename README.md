@@ -34,5 +34,5 @@ Após baixar o arquivo zip clique com o botão direito na pasta zipada.
 
 ***Você será redirecionada a página do jogo!!***
 
-<img width="1920" height="878" alt="image (6)" src="https://github.com/user-attachments/assets/17a1de74-0ad0-4421-81bf-687e5aa5e260" />
+<img width="1914" height="908" alt="image" src="https://github.com/user-attachments/assets/44812aac-e8d8-4664-b0a8-1dea70fca614" />
 
