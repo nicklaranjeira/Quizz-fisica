@@ -1,4 +1,4 @@
-# Tutorial para Jogar Energy Quizz
+# Tutorial para Jogar Energy Quizz 🔋
 
 ## ***Passo 1:***
 
