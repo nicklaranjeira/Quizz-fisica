@@ -1,57 +1,48 @@
 /**
- * QUIZ.JS — LÓGICA DO JOGO DE QUIZ EDUCACIONAL DE FÍSICA
- * Gerenciamento de Estado, Seleção/Embaralhamento com Bloqueio de 3 Rodadas,
- * Temporizador de 20s, Validação de Gabarito, Pontuação, XP, Níveis e LocalStorage.
+ * QUIZ.JS — LÓGICA DO JOGO DE QUIZ EDUCACIONAL DE FÍSICA (MODO 2 EQUIPES)
+ * Gerenciamento de Estado de Equipes, Seleção/Embaralhamento com Bloqueio de 3 Rodadas,
+ * Temporizador de 20s, Validação de Gabarito, Pontuação por Equipe (+100/-100/0) e Botão Passar.
  */
 
 const QuizEngine = (() => {
   // Constantes de Configuração
   const QUESTIONS_PER_ROUND = 10;
   const SECONDS_PER_QUESTION = 20;
-  const POINTS_PER_CORRECT = 100;
-  const XP_PER_100_POINTS = 10;
+  const POINTS_CORRECT = 100;
+  const POINTS_INCORRECT = -100;
   const LOCKOUT_ROUNDS = 2; // Bloqueia nas 2 rodadas seguintes (reaparece a partir da rodada R + 3)
 
-  // Chaves do LocalStorage
+  // Chaves do LocalStorage (apenas para regra de repetição de questões entre rodadas)
   const STORAGE_KEYS = {
-    TOTAL_XP: "quiz_fisica_total_xp",
-    LEVEL: "quiz_fisica_level",
     CURRENT_ROUND: "quiz_fisica_round",
-    QUESTION_HISTORY: "quiz_fisica_history",
-    GAMES_PLAYED: "quiz_fisica_games_played",
-    TOTAL_HITS: "quiz_fisica_total_hits",
-    SOUND_MUTED: "quiz_fisica_sound_muted"
+    QUESTION_HISTORY: "quiz_fisica_history"
   };
 
   // Estado do Quiz
   const state = {
-    totalXP: 0,
-    level: 1,
+    // Equipes
+    teams: {
+      team1: { name: "", score: 0, hits: 0, misses: 0 },
+      team2: { name: "", score: 0, hits: 0, misses: 0 }
+    },
+    selectedTeam: null, // "team1" | "team2" | null
+
+    // Controle de Rodadas e Histórico
     currentRound: 1,
     questionHistory: {}, // { [questionId]: lastRoundNumber }
-    gamesPlayed: 0,
-    totalHits: 0,
 
     // Estado da rodada ativa
     activeRoundQuestions: [],
     currentQuestionIndex: 0,
-    currentScore: 0,
-    currentHits: 0,
-    currentMisses: 0,
-    roundXPGained: 0,
     
     // Controle do timer
     timerSecondsLeft: SECONDS_PER_QUESTION,
     timerInterval: null,
     isAnswerLocked: false,
-    timerCallback: null,
     
     // Callbacks de eventos
     onTimerTick: null,
-    onTimerExpire: null,
-    onQuestionAnswered: null,
-    onRoundFinished: null,
-    onLevelUp: null
+    onTimerExpire: null
   };
 
   /**
@@ -67,79 +58,87 @@ const QuizEngine = (() => {
   }
 
   /**
-   * Cálculo de Nível e Progresso de XP
-   * Nível 1: 0 - 99 XP (100 XP para subir)
-   * Nível 2: 100 - 249 XP (150 XP para subir)
-   * Nível 3: 250 - 449 XP (200 XP para subir)
-   * Nível 4: 450 - 699 XP (250 XP para subir)
-   * Nível N: curva suave e progressiva
-   */
-  function calculateLevelData(xp) {
-    let currentLvl = 1;
-    let accumulatedNeeded = 0;
-    let step = 100;
-
-    while (true) {
-      if (xp < accumulatedNeeded + step) {
-        const xpInCurrentLevel = xp - accumulatedNeeded;
-        const xpRequiredForNext = step;
-        const progressPercent = Math.min(100, Math.max(0, Math.round((xpInCurrentLevel / xpRequiredForNext) * 100)));
-        return {
-          level: currentLvl,
-          xpInCurrentLevel,
-          xpRequiredForNext,
-          progressPercent,
-          totalXP: xp
-        };
-      }
-      accumulatedNeeded += step;
-      currentLvl++;
-      step += 50; // Cada nível exige 50 XP adicionais
-    }
-  }
-
-  /**
-   * Inicializa e carrega dados salvos no LocalStorage
+   * Inicializa o histórico de questões a partir do LocalStorage
    */
   function init() {
     try {
-      const savedXP = localStorage.getItem(STORAGE_KEYS.TOTAL_XP);
       const savedRound = localStorage.getItem(STORAGE_KEYS.CURRENT_ROUND);
       const savedHistory = localStorage.getItem(STORAGE_KEYS.QUESTION_HISTORY);
-      const savedGames = localStorage.getItem(STORAGE_KEYS.GAMES_PLAYED);
-      const savedTotalHits = localStorage.getItem(STORAGE_KEYS.TOTAL_HITS);
 
-      state.totalXP = savedXP !== null ? parseInt(savedXP, 10) : 0;
       state.currentRound = savedRound !== null ? parseInt(savedRound, 10) : 1;
       state.questionHistory = savedHistory ? JSON.parse(savedHistory) : {};
-      state.gamesPlayed = savedGames !== null ? parseInt(savedGames, 10) : 0;
-      state.totalHits = savedTotalHits !== null ? parseInt(savedTotalHits, 10) : 0;
-
-      const lvlData = calculateLevelData(state.totalXP);
-      state.level = lvlData.level;
     } catch (e) {
-      console.warn("Erro ao carregar dados do localStorage:", e);
-      state.totalXP = 0;
-      state.level = 1;
+      console.warn("Erro ao carregar histórico do localStorage:", e);
       state.currentRound = 1;
       state.questionHistory = {};
     }
   }
 
   /**
-   * Salva progresso no LocalStorage
+   * Salva histórico de repetição de questões
    */
-  function saveProgress() {
+  function saveHistory() {
     try {
-      localStorage.setItem(STORAGE_KEYS.TOTAL_XP, state.totalXP.toString());
-      localStorage.setItem(STORAGE_KEYS.LEVEL, state.level.toString());
       localStorage.setItem(STORAGE_KEYS.CURRENT_ROUND, state.currentRound.toString());
       localStorage.setItem(STORAGE_KEYS.QUESTION_HISTORY, JSON.stringify(state.questionHistory));
-      localStorage.setItem(STORAGE_KEYS.GAMES_PLAYED, state.gamesPlayed.toString());
-      localStorage.setItem(STORAGE_KEYS.TOTAL_HITS, state.totalHits.toString());
     } catch (e) {
-      console.warn("Erro ao salvar no localStorage:", e);
+      console.warn("Erro ao salvar histórico:", e);
     }
+  }
+
+  /**
+   * Configura os nomes das duas equipes
+   */
+  function setTeams(team1Name, team2Name) {
+    const name1 = (team1Name || "").trim();
+    const name2 = (team2Name || "").trim();
+
+    if (!name1 || !name2) {
+      return { success: false, message: "Os nomes de ambas as equipes são obrigatórios." };
+    }
+
+    state.teams.team1.name = name1;
+    state.teams.team1.score = 0;
+    state.teams.team1.hits = 0;
+    state.teams.team1.misses = 0;
+
+    state.teams.team2.name = name2;
+    state.teams.team2.score = 0;
+    state.teams.team2.hits = 0;
+    state.teams.team2.misses = 0;
+
+    state.selectedTeam = null;
+    return { success: true };
+  }
+
+  /**
+   * Retorna os dados atuais das equipes
+   */
+  function getTeamsData() {
+    return {
+      team1: { ...state.teams.team1 },
+      team2: { ...state.teams.team2 }
+    };
+  }
+
+  /**
+   * Seleciona a equipe responsável por responder a pergunta atual
+   * @param {'team1' | 'team2'} teamKey
+   */
+  function selectTeam(teamKey) {
+    if (state.isAnswerLocked) return false;
+    if (teamKey === "team1" || teamKey === "team2") {
+      state.selectedTeam = teamKey;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Retorna a equipe selecionada para a pergunta atual
+   */
+  function getSelectedTeam() {
+    return state.selectedTeam;
   }
 
   /**
@@ -160,7 +159,6 @@ const QuizEngine = (() => {
 
     // Fallback de segurança se por algum motivo extremo não houver 10 elegíveis
     if (eligible.length < QUESTIONS_PER_ROUND) {
-      console.warn("Poucas questões elegíveis encontradas. Liberando as mais antigas.");
       const sortedByAge = [...QUESTIONS_DATABASE].sort((a, b) => {
         const roundA = state.questionHistory[a.id] || 0;
         const roundB = state.questionHistory[b.id] || 0;
@@ -174,29 +172,26 @@ const QuizEngine = (() => {
     const medios = shuffleArray(eligible.filter(q => q.difficulty === "medio"));
     const dificeis = shuffleArray(eligible.filter(q => q.difficulty === "dificil"));
 
-    // Distribuição balanceada ideal: 4 fáceis, 3 médias, 3 difíceis (ou 3-4-3)
+    // Distribuição balanceada ideal: 3-4 fáceis, 3-4 médias, 2-3 difíceis
     let selected = [];
 
-    // Pega fáceis (meta: 3 a 4)
     const targetFacil = Math.min(faciles.length, (state.currentRound % 3 === 1) ? 4 : 3);
     selected.push(...faciles.slice(0, targetFacil));
 
-    // Pega médias (meta: 3 a 4)
     const targetMedio = Math.min(medios.length, (state.currentRound % 3 === 2) ? 4 : 3);
     selected.push(...medios.slice(0, targetMedio));
 
-    // Pega difíceis (meta: restante até 10)
     const targetDificil = Math.min(dificeis.length, (state.currentRound % 3 === 0) ? 4 : 3);
     selected.push(...dificeis.slice(0, targetDificil));
 
-    // Se ainda faltar para completar 10 devido a variações nos pools
+    // Se ainda faltar para completar 10
     if (selected.length < QUESTIONS_PER_ROUND) {
       const selectedIds = new Set(selected.map(q => q.id));
       const remainingEligible = shuffleArray(eligible.filter(q => !selectedIds.has(q.id)));
       selected.push(...remainingEligible.slice(0, QUESTIONS_PER_ROUND - selected.length));
     }
 
-    // Se ainda faltar (caso extremo), completa com qualquer questão disponível
+    // Se ainda faltar (caso extremo)
     if (selected.length < QUESTIONS_PER_ROUND) {
       const selectedIds = new Set(selected.map(q => q.id));
       const allShuffled = shuffleArray(QUESTIONS_DATABASE.filter(q => !selectedIds.has(q.id)));
@@ -226,7 +221,7 @@ const QuizEngine = (() => {
   }
 
   /**
-   * Inicia uma nova rodada
+   * Inicia uma nova rodada com 10 perguntas
    */
   function startNewRound() {
     stopTimer();
@@ -234,18 +229,24 @@ const QuizEngine = (() => {
     const selectedQuestions = selectEligibleQuestions();
     state.activeRoundQuestions = selectedQuestions;
     state.currentQuestionIndex = 0;
-    state.currentScore = 0;
-    state.currentHits = 0;
-    state.currentMisses = 0;
-    state.roundXPGained = 0;
+    state.selectedTeam = null;
     state.isAnswerLocked = false;
+
+    // Zera pontuações da nova partida
+    state.teams.team1.score = 0;
+    state.teams.team1.hits = 0;
+    state.teams.team1.misses = 0;
+
+    state.teams.team2.score = 0;
+    state.teams.team2.hits = 0;
+    state.teams.team2.misses = 0;
 
     // Registra no histórico que as questões entraram nesta rodada
     selectedQuestions.forEach(q => {
       state.questionHistory[q.id] = state.currentRound;
     });
 
-    saveProgress();
+    saveHistory();
     return getCurrentQuestionData();
   }
 
@@ -264,10 +265,8 @@ const QuizEngine = (() => {
       difficulty: q.difficulty,
       question: q.question,
       options: q.options,
-      score: state.currentScore,
-      hits: state.currentHits,
-      misses: state.currentMisses,
-      levelData: calculateLevelData(state.totalXP)
+      selectedTeam: state.selectedTeam,
+      teams: getTeamsData()
     };
   }
 
@@ -313,85 +312,105 @@ const QuizEngine = (() => {
    * Processa o esgotamento do tempo (0s)
    */
   function handleTimeout() {
-    if (state.isAnswerLocked) return;
+    if (state.isAnswerLocked) return null;
     state.isAnswerLocked = true;
 
     const currentQ = state.activeRoundQuestions[state.currentQuestionIndex];
-    state.currentMisses++;
 
     const result = {
       isTimeout: true,
+      isPass: false,
       isCorrect: false,
+      selectedTeam: null,
       selectedOptionIndex: -1,
       correctOptionIndex: currentQ.correctAnswerIndex,
-      scoreGained: 0,
-      xpGained: 0,
-      totalScore: state.currentScore,
-      hits: state.currentHits,
-      misses: state.currentMisses,
-      levelData: calculateLevelData(state.totalXP)
+      pointsChanged: 0,
+      teams: getTeamsData()
     };
 
     if (state.onTimerExpire) {
       state.onTimerExpire(result);
     }
+    return result;
   }
 
   /**
-   * Processa a seleção de uma alternativa pelo jogador
+   * Processa a ação de PASSAR a pergunta
+   * Funciona mesmo sem equipe selecionada. Não altera pontos nem acertos/erros.
    */
-  function submitAnswer(optionIndex) {
+  function passQuestion() {
     if (state.isAnswerLocked) return null;
     state.isAnswerLocked = true;
     stopTimer();
 
     const currentQ = state.activeRoundQuestions[state.currentQuestionIndex];
-    const isCorrect = optionIndex === currentQ.correctAnswerIndex;
-
-    let scoreGained = 0;
-    let xpGained = 0;
-    const oldLevel = state.level;
-
-    if (isCorrect) {
-      scoreGained = POINTS_PER_CORRECT;
-      xpGained = XP_PER_100_POINTS;
-      state.currentScore += scoreGained;
-      state.currentHits += 1;
-      state.totalHits += 1;
-      state.roundXPGained += xpGained;
-      state.totalXP += xpGained;
-    } else {
-      state.currentMisses += 1;
-    }
-
-    const lvlData = calculateLevelData(state.totalXP);
-    const didLevelUp = lvlData.level > oldLevel;
-    if (didLevelUp) {
-      state.level = lvlData.level;
-    }
-
-    saveProgress();
 
     return {
       isTimeout: false,
-      isCorrect,
-      selectedOptionIndex: optionIndex,
+      isPass: true,
+      isCorrect: false,
+      selectedTeam: state.selectedTeam,
+      selectedOptionIndex: -1,
       correctOptionIndex: currentQ.correctAnswerIndex,
-      scoreGained,
-      xpGained,
-      totalScore: state.currentScore,
-      hits: state.currentHits,
-      misses: state.currentMisses,
-      didLevelUp,
-      newLevel: state.level,
-      levelData: lvlData
+      pointsChanged: 0,
+      teams: getTeamsData()
     };
   }
 
   /**
-   * Avança para a próxima pergunta ou conclui a rodada
+   * Processa a seleção de uma alternativa pela equipe ativa
+   * @param {number} optionIndex
+   */
+  function submitAnswer(optionIndex) {
+    if (state.isAnswerLocked) return null;
+
+    // Valida se há uma equipe selecionada
+    if (!state.selectedTeam) {
+      return {
+        error: "NO_TEAM_SELECTED",
+        message: "Selecione uma equipe primeiro."
+      };
+    }
+
+    state.isAnswerLocked = true;
+    stopTimer();
+
+    const currentQ = state.activeRoundQuestions[state.currentQuestionIndex];
+    const isCorrect = optionIndex === currentQ.correctAnswerIndex;
+    const teamKey = state.selectedTeam;
+
+    let pointsChanged = 0;
+
+    if (isCorrect) {
+      pointsChanged = POINTS_CORRECT; // +100
+      state.teams[teamKey].score += pointsChanged;
+      state.teams[teamKey].hits += 1;
+    } else {
+      pointsChanged = POINTS_INCORRECT; // -100
+      state.teams[teamKey].score += pointsChanged;
+      state.teams[teamKey].misses += 1;
+    }
+
+    return {
+      isTimeout: false,
+      isPass: false,
+      isCorrect,
+      selectedTeam: teamKey,
+      teamName: state.teams[teamKey].name,
+      selectedOptionIndex: optionIndex,
+      correctOptionIndex: currentQ.correctAnswerIndex,
+      pointsChanged,
+      teams: getTeamsData()
+    };
+  }
+
+  /**
+   * Avança para a próxima pergunta ou conclui a partida
    */
   function advance() {
+    // Reseta a equipe selecionada para a próxima questão
+    state.selectedTeam = null;
+
     if (state.currentQuestionIndex + 1 < QUESTIONS_PER_ROUND) {
       state.currentQuestionIndex++;
       state.isAnswerLocked = false;
@@ -400,53 +419,52 @@ const QuizEngine = (() => {
         nextQuestion: getCurrentQuestionData()
       };
     } else {
-      // Fim da rodada
-      state.gamesPlayed++;
+      // Fim da rodada de 10 perguntas
+      const team1 = state.teams.team1;
+      const team2 = state.teams.team2;
+
+      let winner = null;
+      let isTie = false;
+
+      if (team1.score > team2.score) {
+        winner = "team1";
+      } else if (team2.score > team1.score) {
+        winner = "team2";
+      } else {
+        isTie = true;
+      }
+
       const finalResult = {
         isRoundComplete: true,
         roundNumber: state.currentRound,
-        finalScore: state.currentScore,
-        hits: state.currentHits,
-        misses: state.currentMisses,
-        roundXPGained: state.roundXPGained,
-        totalXP: state.totalXP,
-        level: state.level,
-        levelData: calculateLevelData(state.totalXP)
+        teams: getTeamsData(),
+        winner,
+        isTie,
+        winnerName: winner ? state.teams[winner].name : null,
+        winnerScore: winner ? state.teams[winner].score : null
       };
 
-      // Incrementa o número da rodada para a próxima partida
+      // Incrementa rodada para persistência do lockout
       state.currentRound++;
-      saveProgress();
+      saveHistory();
 
       return finalResult;
     }
   }
 
   /**
-   * Retorna estatísticas gerais do jogador
+   * Reinicia completamente a partida (apaga nomes, equipes e pontuações)
    */
-  function getPlayerStats() {
-    return {
-      totalXP: state.totalXP,
-      level: state.level,
-      currentRound: state.currentRound,
-      gamesPlayed: state.gamesPlayed,
-      totalHits: state.totalHits,
-      levelData: calculateLevelData(state.totalXP)
+  function resetMatch() {
+    stopTimer();
+    state.teams = {
+      team1: { name: "", score: 0, hits: 0, misses: 0 },
+      team2: { name: "", score: 0, hits: 0, misses: 0 }
     };
-  }
-
-  /**
-   * Reinicia progresso (utilitário para testes ou reset opcional)
-   */
-  function resetProgress() {
-    state.totalXP = 0;
-    state.level = 1;
-    state.currentRound = 1;
-    state.questionHistory = {};
-    state.gamesPlayed = 0;
-    state.totalHits = 0;
-    saveProgress();
+    state.selectedTeam = null;
+    state.activeRoundQuestions = [];
+    state.currentQuestionIndex = 0;
+    state.isAnswerLocked = false;
   }
 
   // Inicializa o engine ao carregar
@@ -454,16 +472,19 @@ const QuizEngine = (() => {
 
   return {
     init,
+    setTeams,
+    getTeamsData,
+    selectTeam,
+    getSelectedTeam,
     startNewRound,
     getCurrentQuestionData,
     startTimer,
     stopTimer,
     submitAnswer,
+    passQuestion,
     handleTimeout,
     advance,
-    getPlayerStats,
-    calculateLevelData,
-    resetProgress,
+    resetMatch,
     SECONDS_PER_QUESTION,
     QUESTIONS_PER_ROUND
   };

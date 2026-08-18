@@ -3,12 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Energy Quizz 🔋 — Matrizes Energéticas & Sustentabilidade</title>
-  <meta name="description" content="Jogo de quiz educacional interativo sobre fontes de energia, transformações e sustentabilidade com progressão de XP e níveis.">
+  <title>Energy Quizz 🔋 — Matrizes Energéticas & Sustentabilidade (Disputa de Equipes)</title>
+  <meta name="description" content="Jogo de quiz educacional interativo em equipes sobre fontes de energia, transformações e sustentabilidade.">
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
+  <!-- Canvas para Chuva de Confetes na Celebração -->
+  <canvas id="confetti-canvas" class="confetti-canvas" aria-hidden="true"></canvas>
 
   <!-- Container Principal -->
   <main id="app">
@@ -21,14 +24,6 @@
       </div>
 
       <div class="header-actions">
-        <!-- Indicador de Nível -->
-        <div class="player-level-badge" id="header-level-badge" title="Seu Nível Atual">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
-          <span>Nível 1</span>
-        </div>
-
         <!-- Botão Alternar Som -->
         <button id="btn-sound-toggle" class="btn-icon" aria-label="Silenciar Som" title="Silenciar som">
           <!-- Ícone Som Ativo -->
@@ -45,8 +40,8 @@
           </svg>
         </button>
 
-        <!-- Botão Resetar Progresso -->
-        <button id="btn-reset-stats" class="btn-icon" aria-label="Reiniciar Progresso" title="Reiniciar estatísticas">
+        <!-- Botão Reiniciar Partida -->
+        <button id="btn-reset-stats" class="btn-icon" aria-label="Reiniciar Jogo" title="Reiniciar partida">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
             <path d="M3 3v5h5"></path>
@@ -56,9 +51,76 @@
     </header>
 
     <!-- ====================================================================
-         1. TELA INICIAL
+         1. TELA DE CONFIGURAÇÃO DAS EQUIPES (PRIMEIRA TELA DO FLUXO)
          ==================================================================== -->
-    <section id="screen-home" class="screen active" aria-labelledby="home-title">
+    <section id="screen-team-setup" class="screen active" aria-labelledby="setup-title">
+      <div class="hero-card">
+        <div class="hero-icon-container" aria-hidden="true">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+
+        <h1 id="setup-title" class="hero-title">Configuração das Equipes</h1>
+        <p class="hero-subtitle">
+          Defina os nomes das duas equipes que irão se enfrentar nesta competição de física e sustentabilidade.
+        </p>
+
+        <form id="form-team-setup" class="team-setup-form" onsubmit="return false;">
+          <div class="form-group">
+            <label for="input-team-1" class="form-label">
+              <span class="team-dot team-1-dot"></span> Nome da Equipe 1 (Lado Esquerdo)
+            </label>
+            <input 
+              type="text" 
+              id="input-team-1" 
+              class="form-input" 
+              placeholder="Ex: Equipe Alfa" 
+              maxlength="24"
+              autocomplete="off"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="input-team-2" class="form-label">
+              <span class="team-dot team-2-dot"></span> Nome da Equipe 2 (Lado Direito)
+            </label>
+            <input 
+              type="text" 
+              id="input-team-2" 
+              class="form-input" 
+              placeholder="Ex: Equipe Beta" 
+              maxlength="24"
+              autocomplete="off"
+              required
+            >
+          </div>
+
+          <!-- Alerta de validação -->
+          <div id="team-setup-error" class="setup-error-msg" role="alert" style="display: none;">
+            Por favor, preencha o nome de ambas as equipes para continuar.
+          </div>
+
+          <div class="hero-actions" style="margin-top: 1.5rem;">
+            <button id="btn-confirm-teams" type="button" class="btn btn-primary-red">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>CONFIRMAR</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         2. TELA INICIAL
+         ==================================================================== -->
+    <section id="screen-home" class="screen" aria-labelledby="home-title">
       <div class="hero-card">
         <div class="hero-icon-container" aria-hidden="true">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -68,22 +130,19 @@
 
         <h1 id="home-title" class="hero-title">Energy Quizz 🔋</h1>
         <p class="hero-subtitle">
-          Matrizes Energéticas, Transformações & Sustentabilidade. Desafie seus conhecimentos em rodadas dinâmicas e acumule XP!
+          Matrizes Energéticas, Transformações & Sustentabilidade. Disputa direta entre duas equipes em 10 perguntas dinâmicas!
         </p>
 
-        <!-- Preview de Estatísticas do Jogador -->
-        <div class="player-stats-preview">
-          <div class="stat-item">
-            <span class="stat-label">Nível Atual</span>
-            <span class="stat-val" id="home-stat-level">1</span>
+        <!-- Preview do Confronto das Equipes -->
+        <div class="teams-matchup-card">
+          <div class="matchup-team team-1">
+            <span class="matchup-team-tag">EQUIPE 1</span>
+            <span class="matchup-team-name" id="home-team1-name">Equipe 1</span>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">XP Total</span>
-            <span class="stat-val" id="home-stat-xp">0</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Rodadas Jogadas</span>
-            <span class="stat-val" id="home-stat-rounds">0</span>
+          <div class="matchup-vs">VS</div>
+          <div class="matchup-team team-2">
+            <span class="matchup-team-tag">EQUIPE 2</span>
+            <span class="matchup-team-name" id="home-team2-name">Equipe 2</span>
           </div>
         </div>
 
@@ -109,133 +168,168 @@
     </section>
 
     <!-- ====================================================================
-         2. TELA DO QUIZ
+         3. TELA DO QUIZ (DINÂMICA DE EQUIPES)
          ==================================================================== -->
     <section id="screen-quiz" class="screen" aria-labelledby="question-text">
       <div class="quiz-container">
         
-        <!-- HUD (Status Superior do Quiz) -->
+        <!-- HUD (Placar das Equipes & Progresso) -->
         <div class="quiz-hud">
           <div class="hud-top-row">
             <span class="hud-progress-text" id="quiz-progress-text">Pergunta 1 de 10</span>
-            <div class="hud-stats-group">
-              <span class="hud-badge-score" id="quiz-score-badge">0 PTS</span>
-              <span class="hud-badge-hits" id="quiz-hits-badge">✓ 0</span>
-              <span class="hud-badge-misses" id="quiz-misses-badge">✕ 0</span>
+            
+            <!-- Placar em Tempo Real das Duas Equipes -->
+            <div class="scoreboard-container">
+              <div class="team-score-badge team-1" id="hud-team1-badge">
+                <span class="team-name-label" id="hud-team1-name">Equipe 1</span>
+                <span class="team-points-val" id="hud-team1-points">0 PTS</span>
+              </div>
+              <div class="scoreboard-divider">⚔️</div>
+              <div class="team-score-badge team-2" id="hud-team2-badge">
+                <span class="team-name-label" id="hud-team2-name">Equipe 2</span>
+                <span class="team-points-val" id="hud-team2-points">0 PTS</span>
+              </div>
             </div>
           </div>
+
           <div class="hud-progress-bar-bg">
             <div class="hud-progress-bar-fill" id="quiz-progress-bar"></div>
           </div>
         </div>
 
-        <!-- Card Central da Pergunta -->
-        <div class="question-card">
-          <div class="question-header">
-            <!-- Badge de Dificuldade -->
-            <span class="badge-difficulty facil" id="badge-difficulty">Nível Fácil</span>
+        <!-- ARENA DO QUIZ: EQUIPE 1 (ESQUERDA) | PERGUNTA (CENTRO) | EQUIPE 2 (DIREITA) -->
+        <div class="quiz-battle-layout">
+          
+          <!-- Botão Equipe 1 (Lado Esquerdo: Grande, Quadrado, Vermelho) -->
+          <div class="team-side-column left-side">
+            <button id="btn-team-1" class="team-select-btn" type="button" aria-label="Selecionar Equipe 1 para responder">
+              <div class="team-btn-badge">EQUIPE 1</div>
+              <span class="team-btn-name" id="team1-btn-name">Equipe 1</span>
+              <div class="team-btn-status">CLIQUE P/ RESPONDER</div>
+            </button>
+          </div>
 
-            <!-- Temporizador Circular SVG -->
-            <div class="timer-container" id="timer-container" aria-label="Tempo restante">
-              <svg class="timer-svg" viewBox="0 0 64 64">
-                <circle class="timer-circle-bg" cx="32" cy="32" r="26"></circle>
-                <circle class="timer-circle-progress" id="timer-circle-progress" cx="32" cy="32" r="26"></circle>
-              </svg>
-              <span class="timer-value" id="timer-value">20</span>
+          <!-- Card Central da Pergunta -->
+          <div class="question-card">
+            <div class="question-header">
+              <!-- Badge de Dificuldade -->
+              <span class="badge-difficulty facil" id="badge-difficulty">Nível Fácil</span>
+
+              <!-- Temporizador Circular SVG (20s) -->
+              <div class="timer-container" id="timer-container" aria-label="Tempo restante">
+                <svg class="timer-svg" viewBox="0 0 64 64">
+                  <circle class="timer-circle-bg" cx="32" cy="32" r="26"></circle>
+                  <circle class="timer-circle-progress" id="timer-circle-progress" cx="32" cy="32" r="26"></circle>
+                </svg>
+                <span class="timer-value" id="timer-value">20</span>
+              </div>
             </div>
+
+            <!-- Enunciado -->
+            <h2 class="question-text" id="question-text">Carregando pergunta...</h2>
+
+            <!-- Grade de Alternativas (A, B, C, D) -->
+            <div class="options-grid" role="group" aria-label="Alternativas da questão">
+              <button class="option-btn" id="btn-opt-0">
+                <span class="option-letter">A</span>
+                <span class="option-text">Alternativa A</span>
+                <span class="option-status-icon" aria-hidden="true"></span>
+              </button>
+              <button class="option-btn" id="btn-opt-1">
+                <span class="option-letter">B</span>
+                <span class="option-text">Alternativa B</span>
+                <span class="option-status-icon" aria-hidden="true"></span>
+              </button>
+              <button class="option-btn" id="btn-opt-2">
+                <span class="option-letter">C</span>
+                <span class="option-text">Alternativa C</span>
+                <span class="option-status-icon" aria-hidden="true"></span>
+              </button>
+              <button class="option-btn" id="btn-opt-3">
+                <span class="option-letter">D</span>
+                <span class="option-text">Alternativa D</span>
+                <span class="option-status-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+
+            <!-- Botão PASSAR (Cinza, posicionado abaixo das alternativas) -->
+            <div class="pass-btn-container">
+              <button id="btn-pass-question" class="btn btn-pass" type="button" aria-label="Passar esta pergunta sem pontuar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                  <line x1="19" y1="5" x2="19" y2="19"></line>
+                </svg>
+                <span>PASSAR</span>
+              </button>
+            </div>
+
+            <!-- Banner de Feedback -->
+            <div class="feedback-banner" id="feedback-banner" aria-live="polite"></div>
           </div>
 
-          <!-- Enunciado -->
-          <h2 class="question-text" id="question-text">Carregando pergunta...</h2>
-
-          <!-- Grade de Alternativas (A, B, C, D) -->
-          <div class="options-grid" role="group" aria-label="Alternativas da questão">
-            <button class="option-btn" id="btn-opt-0">
-              <span class="option-letter">A</span>
-              <span class="option-text">Alternativa A</span>
-              <span class="option-status-icon" aria-hidden="true"></span>
-            </button>
-            <button class="option-btn" id="btn-opt-1">
-              <span class="option-letter">B</span>
-              <span class="option-text">Alternativa B</span>
-              <span class="option-status-icon" aria-hidden="true"></span>
-            </button>
-            <button class="option-btn" id="btn-opt-2">
-              <span class="option-letter">C</span>
-              <span class="option-text">Alternativa C</span>
-              <span class="option-status-icon" aria-hidden="true"></span>
-            </button>
-            <button class="option-btn" id="btn-opt-3">
-              <span class="option-letter">D</span>
-              <span class="option-text">Alternativa D</span>
-              <span class="option-status-icon" aria-hidden="true"></span>
+          <!-- Botão Equipe 2 (Lado Direito: Grande, Quadrado, Vermelho) -->
+          <div class="team-side-column right-side">
+            <button id="btn-team-2" class="team-select-btn" type="button" aria-label="Selecionar Equipe 2 para responder">
+              <div class="team-btn-badge">EQUIPE 2</div>
+              <span class="team-btn-name" id="team2-btn-name">Equipe 2</span>
+              <div class="team-btn-status">CLIQUE P/ RESPONDER</div>
             </button>
           </div>
 
-          <!-- Banner de Feedback -->
-          <div class="feedback-banner" id="feedback-banner" aria-live="polite"></div>
         </div>
 
       </div>
     </section>
 
     <!-- ====================================================================
-         3. TELA DE RESULTADO
+         4. TELA DE RESULTADO FINAL
          ==================================================================== -->
     <section id="screen-result" class="screen" aria-labelledby="result-title">
       <div class="result-card">
         
         <div class="result-header-badge">
-          <span>🏆 Rodada Finalizada</span>
+          <span>🏆 Fim de Partida</span>
         </div>
 
-        <h1 id="result-score-highlight" class="result-score-highlight">850 PONTOS</h1>
-        <p class="result-score-sub">Excelente desempenho!</p>
-
-        <!-- Grade de Acertos e Erros -->
-        <div class="result-stats-grid">
-          <div class="result-stat-box hits" id="result-hits-box">
-            <span>✓ 8 ACERTOS</span>
-          </div>
-          <div class="result-stat-box misses" id="result-misses-box">
-            <span>✕ 2 ERROS</span>
-          </div>
+        <!-- Banner Comemorativo do Vencedor / Empate -->
+        <div class="winner-celebration-banner" id="winner-banner">
+          <div class="medal-icon-container" aria-hidden="true">🏅</div>
+          <h1 id="result-winner-title" class="result-winner-title">PARABÉNS!</h1>
+          <p id="result-winner-sub" class="result-winner-sub">A EQUIPE ALFA VENCEU!</p>
+          <div id="result-winner-points" class="result-winner-points">800 PONTOS</div>
         </div>
 
-        <!-- Card de XP e Nível -->
-        <div class="result-xp-card">
-          <div class="result-xp-header">
-            <span class="xp-gained-tag" id="result-xp-gained-tag">+85 XP</span>
-            <span class="level-tag" id="result-level-tag">NÍVEL: 2</span>
-          </div>
-
-          <div class="xp-bar-container">
-            <div class="xp-bar-bg">
-              <div class="xp-bar-fill" id="result-xp-bar-fill"></div>
-            </div>
-            <div class="xp-bar-labels">
-              <span id="result-total-xp-text">XP TOTAL: 235</span>
-              <span id="result-xp-next-text">15 / 150 XP para o Nível 3</span>
+        <!-- Placar Final Comparativo das Duas Equipes -->
+        <div class="result-teams-grid">
+          <div class="result-team-card" id="result-card-team1">
+            <div class="result-team-badge">EQUIPE 1</div>
+            <h2 class="result-team-name" id="result-name-team1">Equipe 1</h2>
+            <div class="result-team-score" id="result-score-team1">0 PTS</div>
+            <div class="result-team-stats">
+              <span class="stat-hit" id="result-hits-team1">✓ 0 acertos</span>
+              <span class="stat-miss" id="result-misses-team1">✕ 0 erros</span>
             </div>
           </div>
+
+          <div class="result-team-card" id="result-card-team2">
+            <div class="result-team-badge">EQUIPE 2</div>
+            <h2 class="result-team-name" id="result-name-team2">Equipe 2</h2>
+            <div class="result-team-score" id="result-score-team2">0 PTS</div>
+            <div class="result-team-stats">
+              <span class="stat-hit" id="result-hits-team2">✓ 0 acertos</span>
+              <span class="stat-miss" id="result-misses-team2">✕ 0 erros</span>
+            </div>
+          </div>
         </div>
 
-        <!-- Botões de Ação Final -->
+        <!-- Ação de Reiniciar -->
         <div class="result-actions">
-          <button id="btn-play-again" class="btn btn-primary-red">
+          <button id="btn-restart-game" class="btn btn-primary-red">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="23 4 23 10 17 10"></polyline>
               <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
             </svg>
-            <span>JOGAR NOVAMENTE</span>
-          </button>
-
-          <button id="btn-back-to-home" class="btn btn-secondary">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-            <span>VOLTAR AO INÍCIO</span>
+            <span>REINICIAR JOGO</span>
           </button>
         </div>
 
@@ -245,7 +339,7 @@
   </main>
 
   <!-- ====================================================================
-       MODAL 1: REGRAS DO JOGO
+       MODAL 1: REGRAS DO JOGO (DINÂMICA DE EQUIPES)
        ==================================================================== -->
   <div id="modal-rules" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="rules-modal-title" aria-hidden="true">
     <div class="modal-container">
@@ -267,59 +361,63 @@
         <div class="rules-list">
           <div class="rule-item">
             <span class="rule-icon">1</span>
-            <span><strong>10 perguntas por rodada:</strong> Cada partida é composta por exatamente 10 questões equilibradas entre os níveis fácil, médio e difícil.</span>
+            <span><strong>Duas equipes:</strong> O jogo é disputado entre duas equipes concorrentes.</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">2</span>
-            <span><strong>20 segundos por pergunta:</strong> Fique atento ao cronômetro circular na tela.</span>
+            <span><strong>Nomes definidos no início:</strong> Os nomes de ambas as equipes são configurados antes de começar a partida.</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">3</span>
-            <span><strong>4 alternativas:</strong> Cada questão apresenta quatro opções (A, B, C e D) e apenas uma está correta.</span>
+            <span><strong>10 perguntas por rodada:</strong> Cada partida é composta por exatamente 10 questões equilibradas.</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">4</span>
-            <span><strong>Uma tentativa por pergunta:</strong> Ao selecionar uma alternativa, sua resposta é validada imediatamente.</span>
+            <span><strong>20 segundos por pergunta:</strong> Fique atento ao cronômetro circular na tela.</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">5</span>
-            <span><strong>Pontuação por acerto:</strong> Cada resposta correta gera <strong>+100 pontos</strong>.</span>
+            <span><strong>Seleção de equipe obrigatória:</strong> Antes de selecionar uma alternativa, é obrigatório clicar no botão vermelho da equipe que vai responder.</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">6</span>
-            <span><strong>Resposta incorreta:</strong> Erros geram <strong>0 pontos</strong> e revelam a alternativa correta.</span>
+            <span><strong>Responsabilidade da resposta:</strong> Apenas a equipe selecionada será pontuada ou penalizada na questão.</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">7</span>
-            <span><strong>Tempo esgotado:</strong> Se os 20 segundos terminarem, a resposta conta como erro (0 pontos).</span>
+            <span><strong>Pontuação por acerto:</strong> Resposta correta soma <strong>+100 pontos</strong> para a equipe selecionada.</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">8</span>
-            <span><strong>Perguntas embaralhadas:</strong> A ordem das questões muda dinamicamente a cada rodada.</span>
+            <span><strong>Penalidade por erro:</strong> Resposta incorreta subtrai <strong>-100 pontos</strong> da equipe selecionada (a pontuação pode ficar negativa).</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">9</span>
-            <span><strong>Alternativas embaralhadas:</strong> As opções são redistribuídas mantendo o gabarito correto.</span>
+            <span><strong>Botão PASSAR:</strong> Pula a pergunta sem adicionar ou retirar pontos de nenhuma equipe (0 pontos).</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">10</span>
-            <span><strong>Bloqueio de 3 rodadas:</strong> Uma pergunta utilizada fica bloqueada nas 2 rodadas seguintes, só podendo reaparecer na 4ª rodada.</span>
+            <span><strong>Tempo esgotado:</strong> Se os 20 segundos acabarem, a pergunta é encerrada sem alteração de pontuação (0 pontos).</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">11</span>
-            <span><strong>Pontuação gera XP:</strong> A cada 100 pontos obtidos, você recebe <strong>10 XP</strong>.</span>
+            <span><strong>Perguntas embaralhadas:</strong> A ordem das questões muda dinamicamente a cada rodada.</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">12</span>
-            <span><strong>XP acumulativo:</strong> Seu XP nunca zera ao iniciar novas rodadas.</span>
+            <span><strong>Alternativas embaralhadas:</strong> As opções são redistribuídas mantendo o gabarito correto.</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">13</span>
-            <span><strong>Níveis do Jogador:</strong> Ao acumular XP, você sobe de nível e aprimora seu perfil.</span>
+            <span><strong>Bloqueio de repetição:</strong> Uma pergunta utilizada fica bloqueada nas 2 rodadas seguintes, só podendo reaparecer na 4ª rodada.</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">14</span>
-            <span><strong>Progresso salvo:</strong> Seu nível, XP total e histórico são salvos automaticamente no navegador.</span>
+            <span><strong>Equipe vencedora:</strong> Ao final das 10 perguntas, vence a equipe que acumular a maior pontuação.</span>
+          </div>
+          <div class="rule-item">
+            <span class="rule-icon">15</span>
+            <span><strong>Empate:</strong> Se ambas as equipes terminarem com a mesma pontuação, o resultado é declarado como EMPATE.</span>
           </div>
         </div>
       </div>
@@ -333,34 +431,16 @@
   </div>
 
   <!-- ====================================================================
-       MODAL 2: LEVEL UP (CELEBRAÇÃO)
-       ==================================================================== -->
-  <div id="modal-level-up" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="levelup-title" aria-hidden="true">
-    <div class="level-up-modal-container">
-      <div class="level-up-badge-icon" aria-hidden="true">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-        </svg>
-      </div>
-      <h2 id="levelup-title" class="level-up-title">PARABÉNS!</h2>
-      <p class="level-up-text">Você subiu para o <strong id="levelup-new-level">NÍVEL 2!</strong> Continue jogando para acumular ainda mais XP e conhecimento.</p>
-      <button id="btn-close-levelup" class="btn btn-primary-red" style="max-width: 220px; margin: 0 auto;">
-        CONTINUAR
-      </button>
-    </div>
-  </div>
-
-  <!-- ====================================================================
-       MODAL 3: CONFIRMAÇÃO DE RESET DE ESTATÍSTICAS
+       MODAL 2: CONFIRMAÇÃO DE REINÍCIO DE PARTIDA
        ==================================================================== -->
   <div id="modal-reset-confirm" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title" aria-hidden="true">
     <div class="modal-container" style="max-width: 440px;">
       <div class="modal-header">
-        <h2 id="reset-modal-title" class="modal-title">Reiniciar Progresso?</h2>
+        <h2 id="reset-modal-title" class="modal-title">Reiniciar Partida?</h2>
       </div>
       <div class="modal-body" style="text-align: center;">
         <p style="color: var(--text-secondary); margin-bottom: 1rem;">
-          Tem certeza de que deseja resetar todo o seu XP acumulado, nível e histórico de rodadas? Esta ação não pode ser desfeita.
+          Deseja reiniciar a partida atual? Os nomes das equipes e os pontos serão apagados para iniciar um novo jogo.
         </p>
       </div>
       <div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end;">
